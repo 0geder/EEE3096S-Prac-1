@@ -44,15 +44,12 @@
 TIM_HandleTypeDef htim16;
 
 /* USER CODE BEGIN PV */
-// TODO: Define input variables
+// LED control variables
 uint8_t currentMode = 0; // 0=off, 1=back/forth, 2=inverse back/forth, 3=sparkle
 uint8_t currentLED = 0;  // Current LED position for modes 1 and 2
 uint8_t direction = 1;   // 1=forward, 0=backward for modes 1 and 2
 uint8_t delayMode = 0;   // 0=1s, 1=0.5s
-uint8_t sparkleState = 0; // 0=all off, 1=random on, 2=turning off
-uint8_t randomPattern = 0;
-uint32_t sparkleDelay = 0;
-uint8_t currentOffLED = 0;
+uint8_t randomPattern = 0; // Random pattern for sparkle mode
 
 /* USER CODE END PV */
 
@@ -416,13 +413,13 @@ void TIM16_IRQHandler(void)
 	                if (currentLED < 7) currentLED++;
 	                else {
 	                    direction = 0;
-	                    currentLED = 6; // Skip showing LED7 again
+	                    currentLED = 6; // Go to LED6, then backwards
 	                }
 	            } else {
 	                if (currentLED > 0) currentLED--;
 	                else {
 	                    direction = 1;
-	                    currentLED = 1; // Skip showing LED0 again
+	                    currentLED = 1; // Go to LED1, then forwards
 	                }
 	            }
 	            break;
@@ -455,86 +452,51 @@ void TIM16_IRQHandler(void)
 	                if (currentLED < 7) currentLED++;
 	                else {
 	                    direction = 0;
-	                    currentLED = 6; // Skip showing LED7 again
+	                    currentLED = 6; // Go to LED6, then backwards
 	                }
 	            } else {
 	                if (currentLED > 0) currentLED--;
 	                else {
 	                    direction = 1;
-	                    currentLED = 1; // Skip showing LED0 again
+	                    currentLED = 1; // Go to LED1, then forwards
 	                }
 	            }
 	            break;
 
-	        case 3: // Mode 3: Sparkle
-	            if (sparkleState == 0) {
-	                // Generate random pattern
-	                randomPattern = (uint8_t)(HAL_GetTick() % 256);
-	                sparkleDelay = 100 + (HAL_GetTick() % 1400); // 100-1500ms
+	        case 3: // Mode 3: Sparkle - Simplified random pattern
+	            // Generate new random pattern each time
+	            randomPattern = (uint8_t)(HAL_GetTick() % 256);
+	            
+	            // Set LEDs according to random pattern
+	            if (randomPattern & 0x01) LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
+	            else LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
 
-	                // Set LEDs according to random pattern
-	                // Set LEDs based on randomPattern using if-else
-	                if (randomPattern & 0x01) LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
-	                else LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
+	            if (randomPattern & 0x02) LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
+	            else LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
 
-	                if (randomPattern & 0x02) LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
-	                else LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
+	            if (randomPattern & 0x04) LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
+	            else LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
 
-	                if (randomPattern & 0x04) LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
-	                else LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
+	            if (randomPattern & 0x08) LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
+	            else LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
 
-	                if (randomPattern & 0x08) LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
-	                else LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
+	            if (randomPattern & 0x10) LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
+	            else LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
 
-	                if (randomPattern & 0x10) LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
-	                else LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
+	            if (randomPattern & 0x20) LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
+	            else LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
 
-	                if (randomPattern & 0x20) LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
-	                else LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
+	            if (randomPattern & 0x40) LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
+	            else LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
 
-	                if (randomPattern & 0x40) LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
-	                else LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
-
-	                if (randomPattern & 0x80) LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
-	                else LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
-
-	                sparkleState = 1;
-	                // Adjust timer for random delay
-	                htim16.Instance->ARR = sparkleDelay-1;
-	            }
-	            else if (sparkleState == 1) {
-	                // Start turning off LEDs one by one
-	                sparkleState = 2;
-	                currentOffLED = 0;
-	                // Set timer for short delay between turning off LEDs
-	                htim16.Instance->ARR = (HAL_GetTick() % 100)-1;
-	            }
-	            else if (sparkleState == 2) {
-	                // Turn off next LED
-	                switch(currentOffLED) {
-	                    case 0: if (randomPattern & 0x01) LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
-	                    case 1: if (randomPattern & 0x02) LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
-	                    case 2: if (randomPattern & 0x04) LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
-	                    case 3: if (randomPattern & 0x08) LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
-	                    case 4: if (randomPattern & 0x10) LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
-	                    case 5: if (randomPattern & 0x20) LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
-	                    case 6: if (randomPattern & 0x40) LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
-	                    case 7: if (randomPattern & 0x80) LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
-	                }
-
-	                currentOffLED++;
-	                if (currentOffLED >= 8) {
-	                    sparkleState = 0;
-	                    // Reset timer to normal delay
-	                    if (delayMode) {
-	                        htim16.Instance->ARR = 500-1;
-	                    } else {
-	                        htim16.Instance->ARR = 1000-1;
-	                    }
-	                } else {
-	                    // Set timer for short delay between turning off LEDs
-	                    htim16.Instance->ARR = (HAL_GetTick() % 100)-1;
-	                }
+	            if (randomPattern & 0x80) LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
+	            else LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
+	            
+	            // Use normal timer delay for sparkle mode
+	            if (delayMode) {
+	                htim16.Instance->ARR = 500-1;
+	            } else {
+	                htim16.Instance->ARR = 1000-1;
 	            }
 	            break;
 	    }
