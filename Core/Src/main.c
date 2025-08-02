@@ -147,7 +147,6 @@ int main(void)
 
 	  if (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin)) {
 	      currentMode = 3;
-	      sparkleState = 0;
 	      while (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin));
 	  }
     
