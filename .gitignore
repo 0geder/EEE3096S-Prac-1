@@ -1,0 +1,72 @@
+# Build files
+build/
+Debug/
+Release/
+
+# IDE files
+.vscode/
+.settings/
+*.launch
+*.cproject
+*.project
+.mxproject
+mx.scratch
+mx.scratch.xml
+
+# Object files
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.x
+*.xe
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
