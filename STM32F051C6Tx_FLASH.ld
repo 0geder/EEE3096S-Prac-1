@@ -151,7 +151,7 @@ SECTIONS
     *(.RamFunc)        /* .RamFunc sections */
     *(.RamFunc*)       /* .RamFunc* sections */
     . = ALIGN(4);
-  } >RAM AT> FLASH
+  } >RAM AT> FLASH :rwx
 
   /* Uninitialized data section into "RAM" Ram type memory */
   . = ALIGN(4);
