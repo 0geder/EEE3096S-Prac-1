@@ -48,8 +48,11 @@ TIM_HandleTypeDef htim16;
 volatile uint8_t currentMode = 0; // 0=off, 1=back/forth, 2=inverse back/forth, 3=sparkle
 volatile uint8_t currentLED = 0;  // Current LED position for modes 1 and 2
 volatile uint8_t direction = 1;   // 1=forward, 0=backward for modes 1 and 2
-uint8_t delayMode = 0;   // 0=1s, 1=0.5s
-uint8_t randomPattern = 0; // Random pattern for sparkle mode
+volatile uint8_t delayMode = 0;   // 0=1s, 1=0.5s
+volatile uint8_t randomPattern = 0; // Random pattern for sparkle mode
+
+static uint32_t lastButtonPressTime = 0;
+// static uint8_t prev_button_state = 1; // Assuming active-low button (1=not pressed)
 
 /* USER CODE END PV */
 
@@ -116,39 +119,91 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     // TODO: Check pushbuttons to change timer delay
-	  if (LL_GPIO_IsInputPinSet(Button0_GPIO_Port, Button0_Pin)) {
-	      // Button0 (PA0) pressed - toggle delay mode
-	      delayMode = !delayMode;
-	      if (delayMode) {
-	          // Set to 0.5s delay
-	          htim16.Instance->ARR = 500-1;
-	      } else {
-	          // Set to 1s delay
-	          htim16.Instance->ARR = 1000-1;
-	      }
-	      // Simple debounce - wait for button release
-	      while (LL_GPIO_IsInputPinSet(Button0_GPIO_Port, Button0_Pin));
-	  }
+	  
+    // Handle PA0 (delay toggle)
+    if (!LL_GPIO_IsInputPinSet(Button0_GPIO_Port, Button0_Pin) && 
+        (HAL_GetTick() - lastButtonPressTime > 200)) {
+        delayMode = !delayMode;
+        htim16.Instance->ARR = delayMode ? 500-1 : 1000-1;
+        __HAL_TIM_SET_COUNTER(&htim16, 0); // Reset counter
+        lastButtonPressTime = HAL_GetTick();
+        
+        // Wait for button release
+        while (!LL_GPIO_IsInputPinSet(Button0_GPIO_Port, Button0_Pin));
+    }
+
+    // Handle PA1 (Mode 1)
+    if (!LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin) && 
+        (HAL_GetTick() - lastButtonPressTime > 200)) {
+        currentMode = 1;
+        currentLED = 0;
+        direction = 1;
+        lastButtonPressTime = HAL_GetTick();
+        while (!LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin));
+    }
+
+    // Handle PA2 (Mode 2)
+    if (!LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin) && 
+        (HAL_GetTick() - lastButtonPressTime > 200)) {
+        currentMode = 2;
+        currentLED = 0;
+        direction = 1;
+        lastButtonPressTime = HAL_GetTick();
+        while (!LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin));
+    }
+
+    // Handle PA3 (Mode 3)
+    if (!LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin) && 
+        (HAL_GetTick() - lastButtonPressTime > 200)) {
+        currentMode = 3;
+        lastButtonPressTime = HAL_GetTick();
+        while (!LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin));
+    }
+
+    // // Check if Button0 (PA0) is pressed
+    // if (LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_0))  // adjust to Button0_GPIO_Port, Button0_Pin if defined
+    // {
+    //     // Toggle delay mode
+    //     delayMode = !delayMode;
+
+    //     if (delayMode == 0)
+    //     {
+    //         // Set ARR for 1 second delay (assuming 1ms tick, i.e. PSC already set accordingly)
+    //         __HAL_TIM_SET_AUTORELOAD(&htim16, 1000 - 1);
+    //     }
+    //     else
+    //     {
+    //         // Set ARR for 0.5 second delay
+    //         __HAL_TIM_SET_AUTORELOAD(&htim16, 500 - 1);
+    //     }
+
+    //     // Restart counter to apply new ARR immediately
+    //     __HAL_TIM_SET_COUNTER(&htim16, 0);
+
+    //     // Simple software debounce – wait for button release
+    //     while (LL_GPIO_IsInputPinSet(GPIOA, LL_GPIO_PIN_0));
+    //     HAL_Delay(50);  // Add small delay to debounce
+    // }
 
 	  // Check other buttons for mode changes
-	  if (LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin)) {
-	      currentMode = 1;
-	      currentLED = 0;
-	      direction = 1;
-	      while (LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin));
-	  }
+	  // if (LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin)) {
+	  //     currentMode = 1;
+	  //     currentLED = 0;
+	  //     direction = 1;
+	  //     while (LL_GPIO_IsInputPinSet(Button1_GPIO_Port, Button1_Pin));
+	  // }
 
-	  if (LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin)) {
-	      currentMode = 2;
-	      currentLED = 0;
-	      direction = 1;
-	      while (LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin));
-	  }
+	  // if (LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin)) {
+	  //     currentMode = 2;
+	  //     currentLED = 0;
+	  //     direction = 1;
+	  //     while (LL_GPIO_IsInputPinSet(Button2_GPIO_Port, Button2_Pin));
+	  // }
 
-	  if (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin)) {
-	      currentMode = 3;
-	      while (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin));
-	  }
+	  // if (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin)) {
+	  //     currentMode = 3;
+	  //     while (LL_GPIO_IsInputPinSet(Button3_GPIO_Port, Button3_Pin));
+	  // }
     
 
   }
@@ -364,136 +419,131 @@ static void MX_GPIO_Init(void)
 void TIM16_IRQHandler(void)
 	{
 	    // Acknowledge interrupt
-	    HAL_TIM_IRQHandler(&htim16);
+    HAL_TIM_IRQHandler(&htim16);
 
-	    // Change LED pattern based on current mode
-	    switch(currentMode) {
-	        case 0: // All off
-	            LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
-	            LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
-	            LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
-	            LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
-	            LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
-	            LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
-	            LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
-	            LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
-	            break;
+    // Change LED pattern based on current mode
+    switch(currentMode) {
+        case 0: // All off
+            LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
+            LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
+            LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
+            LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
+            LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
+            LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
+            LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
+            LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
+            break;
 
-	        case 1: // Mode 1: back/forth
-	            // Turn off all LEDs first
-	            LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
-	            LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
-	            LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
-	            LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
-	            LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
-	            LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
-	            LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
-	            LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
+        case 1: // Mode 1: back/forth (single LED moving)
+            // Turn off all LEDs first
+            LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
+            LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
+            LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
+            LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
+            LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
+            LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
+            LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
+            LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
 
-	            // Turn on current LED
-	            switch(currentLED) {
-	                case 0: LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
-	                case 1: LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
-	                case 2: LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
-	                case 3: LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
-	                case 4: LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
-	                case 5: LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
-	                case 6: LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
-	                case 7: LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
-	            }
+            // Turn on current LED
+            switch(currentLED) {
+                case 0: LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
+                case 1: LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
+                case 2: LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
+                case 3: LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
+                case 4: LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
+                case 5: LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
+                case 6: LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
+                case 7: LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
+            }
 
-	            // Update position
-	            if (direction) {
-	                if (currentLED < 7) currentLED++;
-	                else {
-	                    direction = 0;
-	                    currentLED = 6; // Go to LED6, then backwards
-	                }
-	            } else {
-	                if (currentLED > 0) currentLED--;
-	                else {
-	                    direction = 1;
-	                    currentLED = 1; // Go to LED1, then forwards
-	                }
-	            }
-	            break;
+            // Update position
+            if (direction) {
+                if (currentLED < 7) currentLED++;
+                else {
+                    direction = 0;
+                    currentLED--;
+                }
+            } else {
+                if (currentLED > 0) currentLED--;
+                else {
+                    direction = 1;
+                    currentLED++;
+                }
+            }
+            break;
 
-	        case 2: // Mode 2: inverse back/forth
-	            // Turn on all LEDs first
-	            LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
-	            LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
-	            LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
-	            LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
-	            LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
-	            LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
-	            LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
-	            LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
+        case 2: // Mode 2: inverse back/forth (all LEDs on except one moving)
+            // Turn on all LEDs first
+            LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
+            LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
+            LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
+            LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
+            LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
+            LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
+            LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
+            LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
 
-	            // Turn off current LED
-	            switch(currentLED) {
-	                case 0: LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
-	                case 1: LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
-	                case 2: LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
-	                case 3: LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
-	                case 4: LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
-	                case 5: LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
-	                case 6: LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
-	                case 7: LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
-	            }
+            // Turn off current LED
+            switch(currentLED) {
+                case 0: LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
+                case 1: LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
+                case 2: LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
+                case 3: LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
+                case 4: LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
+                case 5: LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
+                case 6: LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
+                case 7: LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
+            }
 
-	            // Update position
-	            if (direction) {
-	                if (currentLED < 7) currentLED++;
-	                else {
-	                    direction = 0;
-	                    currentLED = 6; // Go to LED6, then backwards
-	                }
-	            } else {
-	                if (currentLED > 0) currentLED--;
-	                else {
-	                    direction = 1;
-	                    currentLED = 1; // Go to LED1, then forwards
-	                }
-	            }
-	            break;
+            // Update position
+            if (direction) {
+                if (currentLED < 7) currentLED++;
+                else {
+                    direction = 0;
+                    currentLED--;
+                }
+            } else {
+                if (currentLED > 0) currentLED--;
+                else {
+                    direction = 1;
+                    currentLED++;
+                }
+            }
+            break;
 
-	        case 3: // Mode 3: Sparkle - Simplified random pattern
-	            // Generate new random pattern each time
-	            randomPattern = (uint8_t)(HAL_GetTick() % 256);
-	            
-	            // Set LEDs according to random pattern
-	            if (randomPattern & 0x01) LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin);
-	            else LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin);
-
-	            if (randomPattern & 0x02) LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin);
-	            else LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin);
-
-	            if (randomPattern & 0x04) LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin);
-	            else LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin);
-
-	            if (randomPattern & 0x08) LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin);
-	            else LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin);
-
-	            if (randomPattern & 0x10) LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin);
-	            else LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin);
-
-	            if (randomPattern & 0x20) LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin);
-	            else LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin);
-
-	            if (randomPattern & 0x40) LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin);
-	            else LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin);
-
-	            if (randomPattern & 0x80) LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin);
-	            else LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin);
-	            
-	            // Use normal timer delay for sparkle mode
-	            if (delayMode) {
-	                htim16.Instance->ARR = 500-1;
-	            } else {
-	                htim16.Instance->ARR = 1000-1;
-	            }
-	            break;
-	    }
+        case 3: // Mode 3: Sparkle
+            // Generate new random pattern
+            randomPattern = (uint8_t)(HAL_GetTick() % 256);
+            
+            // Set all LEDs according to random pattern
+            for (uint8_t i = 0; i < 8; i++) {
+                if (randomPattern & (1 << i)) {
+                    switch(i) {
+                        case 0: LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
+                        case 1: LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
+                        case 2: LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
+                        case 3: LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
+                        case 4: LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
+                        case 5: LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
+                        case 6: LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
+                        case 7: LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
+                    }
+                } else {
+                    switch(i) {
+                        case 0: LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
+                        case 1: LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
+                        case 2: LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
+                        case 3: LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
+                        case 4: LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
+                        case 5: LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
+                        case 6: LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
+                        case 7: LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
+                    }
+                }
+            }
+            break;
+    }
 	}
 
 
