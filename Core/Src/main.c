@@ -45,9 +45,9 @@ TIM_HandleTypeDef htim16;
 
 /* USER CODE BEGIN PV */
 // LED control variables
-uint8_t currentMode = 0; // 0=off, 1=back/forth, 2=inverse back/forth, 3=sparkle
-uint8_t currentLED = 0;  // Current LED position for modes 1 and 2
-uint8_t direction = 1;   // 1=forward, 0=backward for modes 1 and 2
+volatile uint8_t currentMode = 0; // 0=off, 1=back/forth, 2=inverse back/forth, 3=sparkle
+volatile uint8_t currentLED = 0;  // Current LED position for modes 1 and 2
+volatile uint8_t direction = 1;   // 1=forward, 0=backward for modes 1 and 2
 uint8_t delayMode = 0;   // 0=1s, 1=0.5s
 uint8_t randomPattern = 0; // Random pattern for sparkle mode
 
@@ -356,16 +356,11 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//void TIM16_IRQHandler(void)
-//{
-//	// Acknowledge interrupt
-//	HAL_TIM_IRQHandler(&htim16);
-//
-//	// TODO: Change LED pattern
-//
-//
-//
-//}
+/**
+   * @brief  This function handles TIM16 global interrupt.
+   * @retval None
+   */
+  //__attribute__((interrupt("IRQ")))
 void TIM16_IRQHandler(void)
 	{
 	    // Acknowledge interrupt
