@@ -468,36 +468,6 @@ void TIM16_IRQHandler(void)
             break;
 
         case 3: // Mode 3: Sparkle
-            // // Generate new random pattern
-            // randomPattern = (uint8_t)(HAL_GetTick() % 256);
-            
-            // // Set all LEDs according to random pattern
-            // for (uint8_t i = 0; i < 8; i++) {
-            //     if (randomPattern & (1 << i)) {
-            //         switch(i) {
-            //             case 0: LL_GPIO_SetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
-            //             case 1: LL_GPIO_SetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
-            //             case 2: LL_GPIO_SetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
-            //             case 3: LL_GPIO_SetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
-            //             case 4: LL_GPIO_SetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
-            //             case 5: LL_GPIO_SetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
-            //             case 6: LL_GPIO_SetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
-            //             case 7: LL_GPIO_SetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
-            //         }
-            //     } else {
-            //         switch(i) {
-            //             case 0: LL_GPIO_ResetOutputPin(LED0_GPIO_Port, LED0_Pin); break;
-            //             case 1: LL_GPIO_ResetOutputPin(LED1_GPIO_Port, LED1_Pin); break;
-            //             case 2: LL_GPIO_ResetOutputPin(LED2_GPIO_Port, LED2_Pin); break;
-            //             case 3: LL_GPIO_ResetOutputPin(LED3_GPIO_Port, LED3_Pin); break;
-            //             case 4: LL_GPIO_ResetOutputPin(LED4_GPIO_Port, LED4_Pin); break;
-            //             case 5: LL_GPIO_ResetOutputPin(LED5_GPIO_Port, LED5_Pin); break;
-            //             case 6: LL_GPIO_ResetOutputPin(LED6_GPIO_Port, LED6_Pin); break;
-            //             case 7: LL_GPIO_ResetOutputPin(LED7_GPIO_Port, LED7_Pin); break;
-            //         }
-            //     }
-            // }
-            // break;
             static uint32_t lastChangeTime = 0;
             static uint8_t sparkleState = 0; // 0=display new pattern, 1=turning off LEDs
             static uint8_t ledsToTurnOff = 0;
