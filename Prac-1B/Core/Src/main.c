@@ -128,8 +128,9 @@ int main(void)
   HAL_Delay(1000);
 
   //TODO: Turn off the LEDs
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+  // turn off LED 0 and LED 1
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
+ 
 
   /* USER CODE END 2 */
 
@@ -214,6 +215,50 @@ uint64_t calculate_mandelbrot_fixed_point_arithmetic(int width, int height, int 
   uint64_t mandelbrot_sum = 0;
     //TODO: Complete the function implementation
     
+    const int64_t SCALE = 1000000; // Scale factor for fixed-point arithmetic
+
+    const int64_t LIMIT = 4 * SCALE * SCALE; // Limit for the escape condition (|z|^2 < 4)
+
+    for (int y = 0; y < height; y++){
+      for (int x = 0; x < width; x++){
+        // Map pixel coordinate to complex plane (c = c_real + i*c_imag)
+            // c_real = (x / width) * 3.5 - 2.5
+            // c_imag = (y / height) * 2.0 - 1.0
+            // We use 64-bit integers to prevent overflow during intermediate multiplication.
+            int64_t c_real = ((int64_t)x * 3500000) / width - 2500000;
+            int64_t c_imag = ((int64_t)y * 2000000) / height - 1000000;
+
+            int64_t z_real = 0;
+            int64_t z_imag = 0;
+            int iteration = 0;
+
+            while (iteration < max_iterations) {
+                int64_t z_real_sq = z_real * z_real;
+                int64_t z_imag_sq = z_imag * z_imag;
+
+                // Check for divergence
+                if ((z_real_sq + z_imag_sq) > LIMIT) {
+                    break;
+                }
+
+                // Iterate z_new = z^2 + c
+                // z_imag_new = 2 * z_real * z_imag + c_imag
+                // The term 2*z_real*z_imag is scaled by SCALE^2, so we divide by SCALE
+                // to bring it back to a number scaled by SCALE.
+                int64_t z_imag_new = (2 * z_real * z_imag) / SCALE + c_imag;
+
+                // z_real_new = z_real^2 - z_imag^2 + c_real
+                // The term (z_real^2 - z_imag^2) is also scaled by SCALE^2, divide by SCALE.
+                int64_t z_real_new = (z_real_sq - z_imag_sq) / SCALE + c_real;
+
+                z_real = z_real_new;
+                z_imag = z_imag_new;
+
+                iteration++;
+      }
+      mandelbrot_sum += iteration;
+    }
+  }
     return mandelbrot_sum;
 
 }
