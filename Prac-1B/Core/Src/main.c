@@ -224,7 +224,7 @@ uint64_t calculate_mandelbrot_fixed_point_arithmetic(int width, int height, int 
         // Map pixel coordinate to complex plane (c = c_real + i*c_imag)
             // c_real = (x / width) * 3.5 - 2.5
             // c_imag = (y / height) * 2.0 - 1.0
-            // We use 64-bit integers to prevent overflow during intermediate multiplication.
+            // Using 64-bit integers to prevent overflow during intermediate multiplication.
             int64_t c_real = ((int64_t)x * 3500000) / width - 2500000;
             int64_t c_imag = ((int64_t)y * 2000000) / height - 1000000;
 
@@ -267,7 +267,29 @@ uint64_t calculate_mandelbrot_fixed_point_arithmetic(int width, int height, int 
 uint64_t calculate_mandelbrot_double(int width, int height, int max_iterations){
     uint64_t mandelbrot_sum = 0;
     //TODO: Complete the function implementation
-    
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            // Map pixel coordinate to complex plane (c = c_real + i*c_imag)
+            double c_real = ((double)x / width) * 3.5 - 2.5;
+            double c_imag = ((double)y / height) * 2.0 - 1.0;
+
+            double z_real = 0.0;
+            double z_imag = 0.0;
+            int iteration = 0;
+
+            // Iterate z_new = z^2 + c until |z| > 2 or max_iterations is reached.
+            while (iteration < max_iterations && (z_real * z_real + z_imag * z_imag) <= 4.0) {
+                // We use a temporary variable for the new real part to ensure the new
+                // imaginary part is calculated using the old real part.
+                double z_real_new = z_real * z_real - z_imag * z_imag + c_real;
+                z_imag = 2 * z_real * z_imag + c_imag;
+                z_real = z_real_new;
+
+                iteration++;
+            }
+            mandelbrot_sum += iteration;
+        }
+    }
     return mandelbrot_sum;
 }
 
